@@ -1,25 +1,24 @@
+cls
+
 /*==================================================
 
-Project:			master thesis
-Author:				liuziyu
-Create Date:		2024.02
-Edit Date:		2024.3.19
+Project:		master thesis - assess
+Author:			liuziyu
+Create Date:	2024.2
+Edit Date:		2024.3.27
 
 --------------------------------------------------
 
-Note:	问题解决活动成果评价；
-			任务单评价；
-			小组自评与互评；
-			视频评价；
-		评分数据读取、另存；
-		缺失值分析与插补；
-		描述；
-		
+This script is for:	
+	- 读取学习结果原始数据
+	- 缺失值插补
+	- 合成总分：任务单评价、小组评价、个人评价
+	- 链接任务单、小组评价、个人评价
+	- 保存综合变量到路径：mymaster
 ==================================================*/
 
 *--- 0: 清空内存，定义路径
 clear 
-cls 
 
 global dir "D:\Onedrive\OneDrive - mail.bnu.edu.cn\0 Academic\1_Graduation\1_毕业设计_202306\1_data"
 	global rawdir "$dir\0_rawdata"
@@ -36,13 +35,14 @@ cd "$mydir"
 import excel using 4_task_0219, firstrow clear
 // 替换缺失值
 foreach i of varlist a1_1-b1_10 {
-	replace `i' = . if `i' == -9
+	replace `i' = . if `i' == -9 // -9表示缺席
 	gen `i'_1 = `i'
-	replace `i'_1 = . if `i'_1 == -9 | `i'_1 == 99
+	replace `i'_1 = . if `i'_1 == -9 | `i'_1 == 99 // 99表示缺失值
  	egen `i'_mean = mean(`i'_1)
 	replace `i'_1 = `i'_mean if missing(`i'_1)
 	replace `i' = `i'_1 if `i' == 99
 }
+
 // 计算总分
 gen score_1 = (a1_1+a2_1+b1_1)/3
 gen score_2 = (a1_2+a2_2+b1_2+b2_2)/4
@@ -55,32 +55,46 @@ gen score_8 = (a1_8+a2_8+a3_8+b1_8+b2_8)/5
 gen score_9 = (a1_9+a2_9+a3_9+b1_9)/4
 gen score_10 = (a1_10+a2_10+b1_10)/3
 
-// forvalues i = 1/10 {
-// 	egen st`i' = std(score_`i')
-// }
-
-drop a* b* /* score* */ 
-
-keep if group == 4 | group == 5 | group == 6 | group == 7
-
-gather score*, variable(date) value(score_task)
-gen date_ = 1
-local dates "2 3 4 5 6 7 8 9 10" 
-foreach i in `dates' {
-	replace date_ = `i' if date == "score_`i'"
+// 标准化
+forvalues i = 1/10 {
+	egen st_`i' = std(score_`i')
 }
 
-drop date name
-rename date_ date 
-sor date group sub
-order date group sub  
+drop a* b*
+/* keep if group == 4 | group == 5 | group == 6 | group == 7 */
+cd "$mydir"
+save 4_task, replace
 
+foreach i in score st {
+	cd "$mydir"
+	use 4_task, clear
+	// 原始得分宽转长
+	keep sub name group `i'*
+	gather `i'*, variable(date) value(`i'_task)
+	gen date_ = 1
+	local dates "2 3 4 5 6 7 8 9 10"
+
+	foreach j in `dates' {
+		replace date_ = `j' if date == "`i'_`j'"
+	}
+
+	drop date name
+	rename date_ date 
+	sor date group sub
+	order date group sub  
+
+	save 4_task_`i', replace
+}
+
+merge 1:1 sub date using 4_task_score, nogen keepusing(score_task)
+label var st_task "标准化任务单评价"
 label var score_task "任务单评价"
-
+erase 4_task_score.dta
+erase 4_task.dta
 cd "$masterdir"
 save 4_Task, replace
 
-*--- 2.小组评价
+*--- 2.小组评价、个人评价
 *------ 2.1 读取数据
 cd "$mydir"
 local dates "1011 1012 1018 1019 1025 1026 1102"
@@ -96,7 +110,7 @@ foreach i in `dates' {
 	erase `i'_assess.dta
 }
 
-keep if group == 4 | group == 5 | group == 6 | group == 7
+/* keep if group == 4 | group == 5 | group == 6 | group == 7 */
 replace date = 3 if date == 1011
 replace date = 4 if date == 1012
 replace date = 5 if date == 1018
@@ -130,26 +144,28 @@ foreach i in `vars' {
 gen score_group = (b1+b2)/2
 gen score_sub = (c1+c2+c3)/3
 
-egen score_group_st = std(score_group)
-egen score_sub_st = std(score_sub)
+egen st_group = std(score_group)
+egen st_sub = std(score_sub)
 
-drop score_sub score_group
-rename (score_group_st score_sub_st) (score_sub score_group)
 erase 1108_assess.dta
 
-local vars "date group sub a1 a2 score_group score_sub" 
+local vars "date group sub a1 a2 score* st*" 
 keep `vars'
 order `vars'
 sor `vars'
 
 label var a1 "表现最佳项目"
 label var a2 "表现最差项目"
-label var score_group "标准化小组评价"
-label var score_sub "标准化个人评价"
+label var st_group "标准化小组评价"
+label var st_sub "标准化个人评价"
+label var score_group "小组评价"
+label var score_sub "个人评价"
 
 rename (a1 a2) (item_best item_worst)
 
 // 合并任务评价和小组评价
 cd "$masterdir"
 merge 1:1 date sub using 4_Task, nogen 
+order date sub group score* st*
+sor date sub
 save 5_Assess, replace

@@ -2,7 +2,7 @@ cls
 
 /*==================================================
 
-Proiect:		master thesis
+Proiect:		master thesis - discourse data preprocess
 Author:			liuziyu
 Create Date:	2024.02
 Edit Date:		2024.3.16
@@ -26,7 +26,7 @@ global dir "D:\Onedrive\OneDrive - mail.bnu.edu.cn\0 Academic\1_Graduation\1_毕
 	global masterdir "$dir\2_mymaster"
 	global desdir "$dir\3_mydescription"
 
-// set scheme plotplain, perm
+set scheme plotplain, perm
 
 *--- 1: 读取文本编码数据
 *------ 1.1: 读取第4组文件
@@ -174,7 +174,7 @@ foreach i in relate cfl mng reg apt orient {
 	label values `i' `i'
 }
 
-local vars "date group sub relate cfl mng apt reg orient"
+local vars "date group sub relate cfl mng apt reg orient Ep"
 keep `vars'
 order `vars'
 sor `vars'
