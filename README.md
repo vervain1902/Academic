@@ -48,3 +48,14 @@ year = {2018}
 * Lourties, S., Léger, P.-M., Sénécal, S., Fredette, M., & Chen, S. L. (2018). Testing the convergent validity of continuous self-perceived measurement systems: An exploratory study. *Proceedings of the International Conference on HCI in Business, Government, and Organizations*, 132–144. <https://doi.org/10/gf7p7p>
 
 * Ross, J. M., Girard, J. M., Wright, A. G. C., Beeney, J. E., Scott, L. N., Hallquist, M. N., … Pilkonis, P. A. (2017). Momentary patterns of covariation between specific affects and interpersonal behavior: Linking relationship science and personality assessment. *Psychological Assessment*, 29(2), 123–134. <http://doi.org/10.1037/pas0000338>
+
+
+--- 
+# 修改需求
+## 1. Collect界面
+[] 增加回放功能，修改之前标注的时间段
+
+## 2. Review界面
+- 细化时间刻度，显示更多（如每10s一个刻度）
+- 增加方框的刻度，从-2到+2，间隔0.5
+
